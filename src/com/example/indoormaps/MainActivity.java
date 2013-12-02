@@ -42,7 +42,8 @@ public class MainActivity extends Activity {
 	Intent LocationIntent;
 	PendingIntent pintent;
 	AlarmManager timer;
-
+	int TRACKING_TIME = 60;
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -141,7 +142,7 @@ public class MainActivity extends Activity {
 			}
 			try {
 				Log.i("Log", "Submitting Post Request");
-				RestMethods.doPost(jsonArray, "http://ec2-54-201-114-123.us-west-2.compute.amazonaws.com:8080/indoor");
+				RestMethods.doPost(jsonArray, "http://ec2-54-201-114-123.us-west-2.compute.amazonaws.com:8080/indoor", 0);
 			} catch (ClientProtocolException e) {
 				e.printStackTrace();
 				Log.i("Post Error: ", e.toString());
@@ -177,19 +178,19 @@ public class MainActivity extends Activity {
 	public void startLocating(View view) {
 		Calendar cal = Calendar.getInstance();
 		cal.setTimeInMillis(System.currentTimeMillis());
-		cal.add(Calendar.SECOND, 30);
+		cal.add(Calendar.SECOND, TRACKING_TIME);
 		Log.d("Log", "Calender Set time:"+ cal.getTime());
 		LocationIntent = new Intent(this, LocationService.class);
 		pintent = PendingIntent.getService(this, 0, LocationIntent, 0);
 		timer = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-		timer.setRepeating(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), 30*1000, pintent);
+		timer.setRepeating(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), TRACKING_TIME*1000, pintent);
 		startService(LocationIntent);
 		Log.d("Log", "Started Location Service");
 	}
 
 	/*
 	 * Stops tracking the user - stops the pending intent
-	 * that sends the suers current info to the database.
+	 * that sends the users current info to the database.
 	 */
 	public void stopLocating(View view) {
 		stopService(LocationIntent);

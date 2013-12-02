@@ -15,6 +15,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.net.ConnectivityManager;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.IBinder;
@@ -36,10 +37,10 @@ public class LocationService extends Service {
 
 	@Override
 	public void onCreate() {
-	    super.onCreate();
+		super.onCreate();
 
 	}
-	
+
 	@Override
 	public IBinder onBind(Intent arg0) {
 		// TODO Auto-generated method stub
@@ -54,8 +55,27 @@ public class LocationService extends Service {
 		mainWifi = (WifiManager) getSystemService(Context.WIFI_SERVICE);
 		// If wifi disabled then enable it
 		if (mainWifi.isWifiEnabled() == false) {  
-			Toast.makeText(getApplicationContext(), "Wifi is disabled..enabling it now!", Toast.LENGTH_LONG).show();
-			mainWifi.setWifiEnabled(true);
+
+			if (mainWifi.setWifiEnabled(true)) {
+				Toast.makeText(getApplicationContext(), "Wifi is disabled..Enabling it now!", Toast.LENGTH_LONG).show();
+			} else {
+				Toast.makeText(getApplicationContext(), "Wifi is disabled..Turning on Mobile Data Now!", Toast.LENGTH_LONG).show();
+				if (!connectToData(getApplicationContext())) {
+					Toast.makeText(getApplicationContext(), "Could not connect to Data... Stopping Service!", Toast.LENGTH_LONG).show();
+					stopSelf();
+				}
+			}
+		
+			//			boolean isNetworkConnected(Context c) {
+			//			      ConnectivityManager conManager = (ConnectivityManager) c.getSystemService(Context.CONNECTIVITY_SERVICE);
+			//			      NetworkInfo netInfo = conManager.getActiveNetworkInfo();
+			//			}
+			//			
+			//			final ConnectivityManager connMgr = (ConnectivityManager)Context.getSystemService(Context.CONNECTIVITY_SERVICE);
+			//		    final android.net.NetworkInfo wifi = connMgr.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
+			//		    final android.net.NetworkInfo mobile = connMgr.getNetworkInfo(ConnectivityManager.TYPE_MOBILE);
+			//			Context.getSystemService(Context.CONNECTIVITY_SERVICE);
+
 		}
 		receiver = new Receiver();
 		registerReceiver(receiver, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
@@ -63,7 +83,25 @@ public class LocationService extends Service {
 		wifiList = mainWifi.getScanResults();
 		return START_NOT_STICKY;
 	}
+
+	public static boolean connectToWifi(Context c) {
+		ConnectivityManager conManager = (ConnectivityManager) c.getSystemService(Context.CONNECTIVITY_SERVICE);
+		if (conManager != null) {
+			conManager.setNetworkPreference(ConnectivityManager.TYPE_MOBILE);
+			return true;
+		}
+		return false;
+	}
 	
+	public static boolean connectToData(Context c) {
+		ConnectivityManager conManager = (ConnectivityManager) c.getSystemService(Context.CONNECTIVITY_SERVICE);
+		if (conManager != null) {
+			conManager.setNetworkPreference(ConnectivityManager.TYPE_MOBILE);
+			return true;
+		}
+		return false;
+	}
+
 	/*
 	 * Receives the wifi scans data and submits it in a JSON Array to the HTTP post method
 	 */
@@ -71,11 +109,11 @@ public class LocationService extends Service {
 		public void onReceive(Context c, Intent intent) {
 			wifiList = mainWifi.getScanResults();
 			Collections.sort(wifiList, new Comparator<ScanResult>() {
-		        @Override
-		        public int compare(ScanResult lhs, ScanResult rhs) {
-		            return (lhs.level > rhs.level ? -1 : (lhs.level==rhs.level ? 0 : 1));
-		        }
-		    });
+				@Override
+				public int compare(ScanResult lhs, ScanResult rhs) {
+					return (lhs.level > rhs.level ? -1 : (lhs.level==rhs.level ? 0 : 1));
+				}
+			});
 			String trail = wifiList.get(0).BSSID + "|" + wifiList.get(0).level;
 			for(int i = 1; i < wifiList.size(); i++) {
 				trail += ";";
@@ -85,15 +123,16 @@ public class LocationService extends Service {
 			JSONArray jsonArray = new JSONArray();
 			JSONObject closest = new JSONObject();
 			try {
-				closest.put("username", "raghuram.trikutam@freecharge.com");
+				closest.put("username", "shaurya@wooo.com");
 				closest.put("usertrail", trail);
 			} catch (JSONException e) {
 				e.printStackTrace();
 				Log.i("JSON Object Put Error: ", e.toString());
 			}
 			jsonArray.put(closest);
+			Log.i("Log", "Posting closest Json Array - " + jsonArray.toString());
 			try {
-				RestMethods.doPost(jsonArray, "http://ec2-54-201-114-123.us-west-2.compute.amazonaws.com:8080/manscan");
+				RestMethods.doPost(jsonArray, "http://ec2-54-201-114-123.us-west-2.compute.amazonaws.com:8080/manual", 1);
 			} catch (ClientProtocolException e) {
 				e.printStackTrace();
 			} catch (IOException e) {
