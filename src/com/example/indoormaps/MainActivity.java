@@ -3,6 +3,7 @@ package com.example.indoormaps;
 import java.io.IOException;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.http.client.ClientProtocolException;
 import org.json.JSONArray;
@@ -25,7 +26,11 @@ import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -43,13 +48,145 @@ public class MainActivity extends Activity {
 	PendingIntent pintent;
 	AlarmManager timer;
 	int TRACKING_TIME = 60;
-	
+	Map<String, Integer> locationMap;
+	Map<String, Integer> shopMap;
+	Spinner spinner1;
+	Spinner spinner2;
+	Shop shops[] = null;
+	Mall malls[] = null;
+
+	public class Mall {
+
+		public int locationid = 0;
+		public String locationname = "";
+		public String locationcity = "";
+
+		// A simple constructor for populating our member variables for this tutorial.
+		public Mall(int _locationid, String _locationname, String _locationcity)
+		{
+			locationid = _locationid;
+			locationname = _locationname;
+			locationcity = _locationcity;
+		}
+
+		public String toString()
+		{
+			return(locationname);
+		}
+	}
+
+	public class Shop {
+
+		public int shopid = 0;
+		public String shopname = "";
+		public int level = 0;
+		public String locationid = "";
+		//"shopid":77,"shopname":"Costa Coffee","level":0,"locationid":1
+		// A simple constructor for populating our member variables for this tutorial.
+		public Shop( int _shopid, String _shopname, int _level, String _locationid )
+		{
+			shopid = _shopid;
+			shopname = _shopname;
+			level = _level;
+			locationid = _locationid;
+		}
+
+		public String toString()
+		{
+			return(shopname);
+		}
+	}
+
+
+
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
-		StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
-		StrictMode.setThreadPolicy(policy);
+		if (android.os.Build.VERSION.SDK_INT > 8) {
+			StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+			StrictMode.setThreadPolicy(policy);
+		}
+
+		//RestMethods.doGet("http://ec2-54-201-114-123.us-west-2.compute.amazonaws.com:8080/fetchlocations");
+		try {
+			malls = createMallList( new JSONArray(RestMethods.doGet("http://ec2-54-201-114-123.us-west-2.compute.amazonaws.com:8080/fetchlocations")));
+		} catch (JSONException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		Log.i("Log", "created Mall List");
+
+		spinner1 = (Spinner)findViewById(R.id.spinner1);
+		ArrayAdapter<Mall> adapter = new ArrayAdapter<Mall> (MainActivity.this, android.R.layout.simple_spinner_item, malls);
+		adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+		spinner1.setAdapter(adapter);
+
+		Log.i("Log", "created mall spinner");
+		//updateShopList();
+		Log.i("Log", "created shop List");
+		spinner1.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+			public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
+				updateShopList();
+			}
+			public void onNothingSelected(AdapterView<?> parent) {
+			}
+		});
+		//		RestMethods.setContext(getApplication(), MainActivity.this);
+
+	}
+
+	public void updateShopList() {
+		Mall currentMall = (Mall)spinner1.getSelectedItem();
+		try {
+			shops = createShopList( new JSONArray(RestMethods.doGet("http://ec2-54-201-114-123.us-west-2.compute.amazonaws.com:8080/fetchshops/" + currentMall.locationid)));
+		} catch (JSONException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		updateShopSpinner();
+	}
+
+	public void updateShopSpinner() {
+		spinner2 = (Spinner)findViewById(R.id.spinner2);
+		ArrayAdapter<Shop> adapter2 = new ArrayAdapter<Shop> (MainActivity.this, android.R.layout.simple_spinner_item, shops);
+		adapter2.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+		spinner2.setAdapter(adapter2);
+		Log.i("Log", "created Shop Spinner");
+		spinner2.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+			public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
+				updateShopId();
+			}
+			public void onNothingSelected(AdapterView<?> parent) {
+			}
+		});
+		Log.i("Log", "Added shop spinner listner");
+	}
+
+	public void updateShopId() {
+		Shop currentShop = (Shop)spinner2.getSelectedItem();
+		shopNumber = currentShop.shopid;
+		TextView idText = (TextView) findViewById(R.id.textView3);
+		idText.setText(shopNumber.toString());
+		Log.i("Log", "Updated Shop ID to " + shopNumber);
+	}
+
+	public Mall[] createMallList(JSONArray array) throws JSONException {
+		Mall malls[] = new Mall[array.length()];
+		for (int i = 0; i < array.length(); i++) {
+			malls[i] = new Mall(array.getJSONObject(i).getInt("locationid"), array.getJSONObject(i).getString("locationname"), array.getJSONObject(i).getString("locationcity"));
+		}
+		return malls;
+	}
+
+	public Shop[] createShopList(JSONArray array) throws JSONException {
+		Shop shops[] = new Shop[array.length()];
+		for (int i = 0; i < array.length(); i++) {
+			shops[i] = new Shop(array.getJSONObject(i).getInt("shopid"), array.getJSONObject(i).getString("shopname"), array.getJSONObject(i).getInt("level"), array.getJSONObject(i).getString("locationid"));
+			// _shopid, String _shopname, int _level, String _locationid
+		}
+		return shops;
 	}
 
 
@@ -59,11 +196,21 @@ public class MainActivity extends Activity {
 		return true;
 	}
 
+	//	public void pushData(View view) {
+	//		scanWifi();
+	//	}
+
+	public void push() {
+		//		Button Button2 = (Button)findViewById(R.id.Button2);
+		//		Button2.requestFocus();
+		//		Button2.performClick();
+	}
+
 	/*
 	 * Called to record the current scan of the network. Used for our initial
 	 * record collection to create the preliminary data.
 	 */
-	public void scanWifi(View view) {
+	public void pushData(View view) {
 		mainText = (TextView) findViewById(R.id.mainText);
 		mainText.setText("\n\nStarting Scan...\n\n");
 		mainText.setMovementMethod(new ScrollingMovementMethod());
@@ -90,6 +237,7 @@ public class MainActivity extends Activity {
 			}
 			unregisterReceiver(receiverWifi);
 			mainText.setText(sb);
+			new AddData().execute(shopNumber);
 		}
 	}
 
@@ -105,13 +253,16 @@ public class MainActivity extends Activity {
 			Toast.makeText(this, "You did not enter a shop number", Toast.LENGTH_SHORT).show();
 			return;
 		} else {
-			Intent intent = new Intent(this, SubmitDataActivity.class);
+			//			Intent intent = new Intent(this, SubmitDataActivity.class);
 			shopNumber = Integer.parseInt(n);
-			new AddData().execute(shopNumber);
-			intent.putExtra("SHOP_NUMBER", shopNumber);
-			addHotspots(wifiList, shopNumber);
-			intent.putExtra(EXTRA_MESSAGE, submitted.toString());
-			startActivity(intent);
+			Button Button2 = (Button)findViewById(R.id.Button01);
+			Button2.requestFocus();
+			Button2.performClick();
+			//new AddData().execute(shopNumber);
+			//			intent.putExtra("SHOP_NUMBER", shopNumber);
+			//			addHotspots(wifiList, shopNumber);
+			//			intent.putExtra(EXTRA_MESSAGE, submitted.toString());
+			//			startActivity(intent);
 		}
 	}
 
@@ -142,7 +293,7 @@ public class MainActivity extends Activity {
 			}
 			try {
 				Log.i("Log", "Submitting Post Request");
-				RestMethods.doPost(jsonArray, "http://ec2-54-201-114-123.us-west-2.compute.amazonaws.com:8080/indoor", 0);
+				RestMethods.doPost(jsonArray, "http://ec2-54-201-114-123.us-west-2.compute.amazonaws.com:8080/indoor", 0, getApplicationContext());
 			} catch (ClientProtocolException e) {
 				e.printStackTrace();
 				Log.i("Post Error: ", e.toString());
@@ -155,7 +306,7 @@ public class MainActivity extends Activity {
 
 		@Override
 		protected void onPostExecute(Void x) {
-			Toast.makeText(MainActivity.this, "Sent Http Request", Toast.LENGTH_LONG).show();
+			Toast.makeText(MainActivity.this, "Http Request Done", Toast.LENGTH_LONG).show();
 		}
 	}
 
@@ -163,6 +314,7 @@ public class MainActivity extends Activity {
 	 * Helper function to just show what information its is sending to the server
 	 */
 	public void addHotspots(List<ScanResult> wifiList, int shopNum) {
+		Log.i("Log", "adding hotspots" + shopNum);
 		for(int i = 0; i < wifiList.size(); i++){
 			String log = wifiList.get(i).BSSID + "  ->  " + wifiList.get(i).level;
 			submitted.append(log);

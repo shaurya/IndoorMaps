@@ -5,11 +5,15 @@
     <string name="action_settings">Settings</string>
     <string name="hello_world">Hello world!</string>
     <string name="edit_message">Shop Number</string>
-    <string name="button_save">Save Data</string>
+    <string name="button_save">Save</string>
     <string name="button_scan">Scan</string>
+    <string name="button_push">Push Data</string>
+    <string name="ID">ID</string>
     <string name="button_table">Stop</string>
     <string name="button_track">Start</string>
     <string name="tracking_text">Tracking</string>
+    <string name="item_prompt1">Select Location</string>
+    <string name="item_prompt2">Select Shop</string>
     <string name="title_activity_submit_data">Submit Data Activity</string>
     <string name="title_activity_location">LocationActivity</string>
 

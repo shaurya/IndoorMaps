@@ -1,6 +1,8 @@
 package com.example.indoormaps;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -53,19 +55,22 @@ public class LocationService extends Service {
 		Log.i("Log", "Pushing Location");
 
 		mainWifi = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+		
 		// If wifi disabled then enable it
 		if (mainWifi.isWifiEnabled() == false) {  
-
-			if (mainWifi.setWifiEnabled(true)) {
-				Toast.makeText(getApplicationContext(), "Wifi is disabled..Enabling it now!", Toast.LENGTH_LONG).show();
-			} else {
+			mainWifi.setWifiEnabled(true);
+			Toast.makeText(getApplicationContext(), "Wifi is disabled..Enabling it now!", Toast.LENGTH_LONG).show();
+			if (!isOnline()) {
+				mainWifi.setWifiEnabled(false);
+				Log.i("Log", "Not online through wifi- switching to data");
 				Toast.makeText(getApplicationContext(), "Wifi is disabled..Turning on Mobile Data Now!", Toast.LENGTH_LONG).show();
 				if (!connectToData(getApplicationContext())) {
+					Log.i("Log", "Could not connect to Data - stopping service");
 					Toast.makeText(getApplicationContext(), "Could not connect to Data... Stopping Service!", Toast.LENGTH_LONG).show();
 					stopSelf();
 				}
 			}
-		
+
 			//			boolean isNetworkConnected(Context c) {
 			//			      ConnectivityManager conManager = (ConnectivityManager) c.getSystemService(Context.CONNECTIVITY_SERVICE);
 			//			      NetworkInfo netInfo = conManager.getActiveNetworkInfo();
@@ -77,11 +82,23 @@ public class LocationService extends Service {
 			//			Context.getSystemService(Context.CONNECTIVITY_SERVICE);
 
 		}
+		Log.i("Log","Finished checking network");
 		receiver = new Receiver();
 		registerReceiver(receiver, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
 		mainWifi.startScan();
 		wifiList = mainWifi.getScanResults();
 		return START_NOT_STICKY;
+	}
+
+	public static boolean isOnline() {
+		try {
+			InetAddress.getByName("google.com").isReachable(3);
+			return true;
+		} catch (UnknownHostException e){
+			return false;
+		} catch (IOException e){
+			return false;
+		}
 	}
 
 	public static boolean connectToWifi(Context c) {
@@ -92,13 +109,16 @@ public class LocationService extends Service {
 		}
 		return false;
 	}
-	
+
 	public static boolean connectToData(Context c) {
 		ConnectivityManager conManager = (ConnectivityManager) c.getSystemService(Context.CONNECTIVITY_SERVICE);
 		if (conManager != null) {
+			Log.i("Log", "ConManager initialized");
 			conManager.setNetworkPreference(ConnectivityManager.TYPE_MOBILE);
+			Log.i("Log", "set network preference ");
 			return true;
 		}
+		Log.i("Log", "ConManager null - no data service");
 		return false;
 	}
 
@@ -132,7 +152,7 @@ public class LocationService extends Service {
 			jsonArray.put(closest);
 			Log.i("Log", "Posting closest Json Array - " + jsonArray.toString());
 			try {
-				RestMethods.doPost(jsonArray, "http://ec2-54-201-114-123.us-west-2.compute.amazonaws.com:8080/manual", 1);
+				RestMethods.doPost(jsonArray, "http://ec2-54-201-114-123.us-west-2.compute.amazonaws.com:8080/manual", 1, getApplicationContext());
 			} catch (ClientProtocolException e) {
 				e.printStackTrace();
 			} catch (IOException e) {
