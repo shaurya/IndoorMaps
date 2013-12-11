@@ -161,5 +161,10 @@ public class LocationService extends Service {
 			unregisterReceiver(receiver);
 		}
 	}
-
+	
+	@Override
+	public void onDestroy() {
+		Toast.makeText(this, "Location Service Stopped", Toast.LENGTH_LONG).show();
+	    super.onDestroy();
+	}
 }

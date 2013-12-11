@@ -9,6 +9,7 @@
     <string name="button_scan">Scan</string>
     <string name="button_push">Push Data</string>
     <string name="ID">ID</string>
+    <string name="data">Use 3G</string>
     <string name="button_table">Stop</string>
     <string name="button_track">Start</string>
     <string name="tracking_text">Tracking</string>

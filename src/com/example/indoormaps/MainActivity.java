@@ -47,7 +47,7 @@ public class MainActivity extends Activity {
 	Intent LocationIntent;
 	PendingIntent pintent;
 	AlarmManager timer;
-	int TRACKING_TIME = 60;
+	int TRACKING_TIME = 20;
 	Map<String, Integer> locationMap;
 	Map<String, Integer> shopMap;
 	Spinner spinner1;
@@ -62,15 +62,13 @@ public class MainActivity extends Activity {
 		public String locationcity = "";
 
 		// A simple constructor for populating our member variables for this tutorial.
-		public Mall(int _locationid, String _locationname, String _locationcity)
-		{
+		public Mall(int _locationid, String _locationname, String _locationcity) {
 			locationid = _locationid;
 			locationname = _locationname;
 			locationcity = _locationcity;
 		}
 
-		public String toString()
-		{
+		public String toString() {
 			return(locationname);
 		}
 	}
@@ -83,16 +81,14 @@ public class MainActivity extends Activity {
 		public String locationid = "";
 		//"shopid":77,"shopname":"Costa Coffee","level":0,"locationid":1
 		// A simple constructor for populating our member variables for this tutorial.
-		public Shop( int _shopid, String _shopname, int _level, String _locationid )
-		{
+		public Shop( int _shopid, String _shopname, int _level, String _locationid ) {
 			shopid = _shopid;
 			shopname = _shopname;
 			level = _level;
 			locationid = _locationid;
 		}
 
-		public String toString()
-		{
+		public String toString() {
 			return(shopname);
 		}
 	}
@@ -109,11 +105,12 @@ public class MainActivity extends Activity {
 			StrictMode.setThreadPolicy(policy);
 		}
 
-		//RestMethods.doGet("http://ec2-54-201-114-123.us-west-2.compute.amazonaws.com:8080/fetchlocations");
 		try {
-			malls = createMallList( new JSONArray(RestMethods.doGet("http://ec2-54-201-114-123.us-west-2.compute.amazonaws.com:8080/fetchlocations")));
+			
+			malls = createMallList(new JSONArray(RestMethods.doGet("http://ec2-54-201-114-123.us-west-2.compute.amazonaws.com:8080/fetchlocations")));
 		} catch (JSONException e) {
 			// TODO Auto-generated catch block
+			Toast.makeText(this, "Could not pull Malls from server", Toast.LENGTH_SHORT).show();
 			e.printStackTrace();
 		}
 		Log.i("Log", "created Mall List");
@@ -124,7 +121,7 @@ public class MainActivity extends Activity {
 		spinner1.setAdapter(adapter);
 
 		Log.i("Log", "created mall spinner");
-		//updateShopList();
+
 		Log.i("Log", "created shop List");
 		spinner1.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
 			public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
@@ -133,8 +130,6 @@ public class MainActivity extends Activity {
 			public void onNothingSelected(AdapterView<?> parent) {
 			}
 		});
-		//		RestMethods.setContext(getApplication(), MainActivity.this);
-
 	}
 
 	public void updateShopList() {
@@ -215,10 +210,10 @@ public class MainActivity extends Activity {
 		mainText.setText("\n\nStarting Scan...\n\n");
 		mainText.setMovementMethod(new ScrollingMovementMethod());
 		mainWifi = (WifiManager) getSystemService(Context.WIFI_SERVICE);
-		if (mainWifi.isWifiEnabled() == false) {  								// If wifi disabled then enable it
-			Toast.makeText(getApplicationContext(), "wifi is disabled..enabling it now!", Toast.LENGTH_LONG).show();
-			mainWifi.setWifiEnabled(true);
-		}
+//		if (mainWifi.isWifiEnabled() == false) {  								// If wifi disabled then enable it
+//			Toast.makeText(getApplicationContext(), "wifi is disabled..enabling it now!", Toast.LENGTH_LONG).show();
+//			mainWifi.setWifiEnabled(true);
+//		}
 		receiverWifi = new WifiReceiver();
 		registerReceiver(receiverWifi, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
 		mainWifi.startScan();
@@ -348,7 +343,6 @@ public class MainActivity extends Activity {
 		stopService(LocationIntent);
 		timer.cancel(pintent);   
 		Log.i("Log", "Stopping Location Service");
-		Toast.makeText(MainActivity.this, "Location Service Stopped", Toast.LENGTH_LONG).show();
 	}
 
 }
